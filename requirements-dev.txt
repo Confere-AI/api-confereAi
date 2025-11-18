@@ -1,0 +1,5 @@
+pytest
+pre-commit
+black==24.10.0
+ruff
+mypy
