@@ -1,2 +1,49 @@
 /treinamento
+# Environment
 .env
+.env.local
+.env.*.local
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Test and coverage
+.pytest_cache/
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+
+# Installer files
+pip-wheel-metadata/
+*.egg-info/
+dist/
+build/
+
+# Docker
+docker-compose.override.yml
+docker-compose.*.yml
+**/db-data
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Python byte-compiled
+*.pyc
