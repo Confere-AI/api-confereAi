@@ -1,141 +1,151 @@
- # confereAi API
+# confereAi API
 
- Este repositório contém uma API em FastAPI e suporte para banco PostgreSQL (asyncpg + SQLAlchemy). Abaixo estão instruções completas para rodar localmente, com Docker, executar/migrar o banco e como alterar o schema.
+Este repositório contém a API em FastAPI com PostgreSQL (asyncpg + SQLAlchemy) e migrações via Alembic.
 
- **Resumo rápido (recomendado)**
- - Recomendado: usar Docker Compose para desenvolvimento (levanta Postgres, aplica migrações e roda a aplicação).
- - Alternativa local: venv + instalar dependências (pode exigir ferramentas de compilação no Windows para `asyncpg`).
+Objetivo deste README
+- Guia rápido e prático para executar, desenvolver e migrar o banco. Comandos prontos em PowerShell (Windows) e notas para Docker.
 
- **Requisitos**
- - Docker e Docker Compose (recomendado)
- - Python 3.11 (recomendado para ambiente local)
+## Índice
+- Resumo rápido
+- Pré-requisitos
+- Quick start — Docker (recomendado)
+- Desenvolvimento com hot-reload
+- Migrações (Alembic)
+- Testes
+- Executar localmente (venv)
+- Acessar o banco (psql)
+- Troubleshooting rápido
+- Contribuindo (mínimo)
+- CI e publicação (nota)
 
- **1) Preparar variáveis de ambiente**
- - Copie o `.env.example` para `.env` e ajuste conforme necessário:
- ```powershell
- cp .env.example .env
- ```
- - A variável mais importante é `DATABASE_URL`. Exemplo para Docker Compose (já definido no `docker-compose.yml`):
- ```text
- postgresql+asyncpg://confere:confere@db:5432/confere
- ```
+---
 
- **2) Rodar com Docker Compose (recomendado)**
- - Build e start (vai criar rede, volume, container do Postgres, da app e um container `migrate` para as migrações):
- ```powershell
- docker compose up --build
- # ou em background
- docker compose up -d --build
- ```
- - Logs (verificar status e migrações):
- ```powershell
- docker compose logs --tail 200
- docker compose ps
- ```
- - A aplicação ficará disponível em `http://localhost:8000` (o `web` expõe `8000:80` no `docker-compose.yml`).
+## Resumo rápido
+- Levantar tudo (prod-like):
 
- **3) Run migrations (Alembic)**
- - O `docker-compose.yml` já inclui o serviço `migrate` que roda `alembic upgrade head`.
- - Para rodar manualmente dentro do container (útil após alterar migrations):
- ```powershell
- docker compose run --rm migrate
- # ou executar a partir da imagem web
- docker compose run --rm web alembic upgrade head
- ```
- - Para criar uma nova migration a partir de mudanças nos models:
- ```powershell
- # abra um shell no container web (ou usar localmente com venv)
- docker compose run --rm web alembic revision --autogenerate -m "descrição"
- # revise o arquivo gerado em alembic/versions, depois aplique
- docker compose run --rm migrate
- ```
+```powershell
+docker compose up --build
+```
 
- **4) Acessar o banco para inspeção/edição (psql)**
- - Conectar ao Postgres do container:
- ```powershell
- docker compose exec db psql -U confere -d confere
- ```
- - Criar/alterar dados manualmente via `psql` ou rodar scripts SQL em `/docker-entrypoint-initdb.d` (apenas na primeira inicialização do volume).
+- Levantar dev com hot-reload:
 
- **5) Rodar localmente sem Docker (desenvolvimento)**
- - Recomendado somente para desenvolvimento rápido; Docker evita problemas de compilação de dependências nativas no Windows.
- ```powershell
- python -m venv .venv
- .\.venv\Scripts\Activate.ps1
- python -m pip install --upgrade pip
- pip install -r requirements.txt
- # Se a instalação de asyncpg falhar no Windows, veja seção Troubleshooting
- ```
- - Rodar testes:
- ```powershell
- .\.venv\Scripts\Activate.ps1
- pip install pytest
- python -m pytest app/tests -q
- ```
- - Rodar servidor local (uvicorn):
- ```powershell
- .\.venv\Scripts\Activate.ps1
- uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
- ```
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```
 
- **6) Criar tabelas sem Alembic (dev)**
- - Há um helper assíncrono que executa `Base.metadata.create_all()`:
- ```powershell
- # via Docker (recomendado)
- docker compose exec web python -c "import asyncio; from app.db.init_db import init_db; asyncio.run(init_db())"
+## Pré-requisitos
+- Docker e Docker Compose (recomendado).
+- Python 3.11 (se for usar venv localmente).
+- Copie `.env.example` para `.env` antes de rodar.
 
- # ou local (venv)
- .\.venv\Scripts\Activate.ps1
- python -c "import asyncio; from app.db.init_db import init_db; asyncio.run(init_db())"
- ```
+## Quick start — Docker (recomendado)
+1. Clone o repositório e entre na pasta:
 
- **7) Fluxo recomendado para alterar o schema (melhor prática)**
- 1. Atualize/adicione seus models em `app/models/*.py`.
- 2. Gere uma migration autogerada:
-	```powershell
-	docker compose run --rm web alembic revision --autogenerate -m "Minha mudança"
-	```
- 3. Revise o arquivo em `alembic/versions/` (corrija se necessário).
- 4. Aplique a migration:
-	```powershell
-	docker compose run --rm migrate
-	```
- 5. Verifique logs e integridade do banco (`psql` ou ferramentas de DB GUI).
+```powershell
+git clone <repo-url>
+cd api-confereAi
+```
 
- **8) Comandos úteis de manutenção**
- - Parar e remover containers (mantendo dados):
- ```powershell
- docker compose down
- ```
- - Parar e remover containers + volumes (limpa dados):
- ```powershell
- docker compose down -v
- ```
- - Rebuild quando alterar `requirements.txt` ou Dockerfile:
- ```powershell
- docker compose build --no-cache
- docker compose up -d --build
- ```
+2. Copie variáveis de ambiente:
 
- **9) Troubleshooting comum**
- - Erro ao instalar `asyncpg` no Windows (compilação falha):
-   - Causa: `asyncpg` pode precisar das Microsoft C++ Build Tools para compilar extensões C/Cython.
-   - Soluções:
-	 - Use Docker (imagem Linux) — a maioria dos pacotes instala wheels prontos.
-	 - Instale o Visual C++ Build Tools (link no erro do pip) e reexecute `pip install -r requirements.txt`.
-	 - Use Python 3.11 ou 3.12 (versões com wheels disponíveis para `asyncpg`) — o projeto recomenda Python 3.11.
-	 - Alternativa temporária: remover `asyncpg` de `requirements.txt` e instalar apenas no ambiente de produção.
+```powershell
+cp .env.example .env
+# editar .env conforme necessário
+```
 
- - `alembic` não encontra o pacote `app` dentro do container migrate:
-   - Solução aplicada neste repositório: `Dockerfile` define `ENV PYTHONPATH=/app` para garantir que `import app` funcione nos containers.
+3. Suba os serviços (Postgres, web, migrate):
 
- **10) Notas finais e dicas**
- - O `docker-compose.yml` já inclui `db`, `web` e `migrate` (migrate roda `alembic upgrade head`).
- - Prefira usar Docker Compose para evitar problemas de dependências nativas em diferentes OS.
- - Sempre revise as migrations geradas automaticamente antes de aplicá-las.
+```powershell
+docker compose up --build
+# em background
+docker compose up -d --build
+```
 
- Se quiser, eu posso:
- - Gerar um `.env.example` com valores seguros de exemplo (se ainda não existir).
- - Remover o arquivo temporário `debug_migrate.py` criado para debug.
- - Abrir um PR com as mudanças (incluindo este README e `Dockerfile` ajustado).
+4. A API ficará disponível em `http://localhost:8000`.
+
+Observação: o serviço `migrate` já executa `alembic upgrade head` conforme `docker-compose.yml`.
+
+## Desenvolvimento com hot-reload
+Use `docker-compose.dev.yml` para montar o código e rodar `uvicorn` com reload:
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```
+
+## Migrações (Alembic)
+- Gerar migration (após alterar models):
+
+```powershell
+docker compose run --rm web alembic revision --autogenerate -m "Descrição da mudança"
+```
+
+- Revisar o arquivo em `alembic/versions/` e, se OK, aplicar:
+
+```powershell
+docker compose run --rm migrate
+# ou
+docker compose run --rm web alembic upgrade head
+```
+
+Fluxo mínimo recomendado ao alterar schema:
+1) Atualizar `app/models/*.py`.
+2) `alembic revision --autogenerate`.
+3) Revisar e ajustar a migration.
+4) `alembic upgrade head`.
+5) Rodar testes.
+
+## Testes
+- Dentro do container (recomendado):
+
+```powershell
+docker compose run --rm web sh -c "pip install pytest && pytest -q"
+```
+
+- Local (venv):
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+pip install pytest
+pytest -q
+```
+
+## Executar localmente (venv)
+- Use venv apenas para dev rápido. Docker é recomendado para evitar problemas de compilação (especialmente no Windows com `asyncpg`).
+
+## Acessar o banco (psql)
+
+```powershell
+docker compose exec db psql -U confere -d confere
+```
+
+Para scripts de inicialização automática, coloque-os em `/docker-entrypoint-initdb.d/`.
+
+## Troubleshooting rápido
+- `asyncpg` falha no Windows: instale o Visual C++ Build Tools ou use Docker para evitar compilação local.
+- `alembic` não encontra `app`: o `Dockerfile` já define `ENV PYTHONPATH=/app` para resolver esse problema.
+- Remover containers e volumes (apaga dados):
+
+```powershell
+docker compose down -v
+```
+
+## Contribuindo (mínimo)
+- Ao alterar schema:
+  1. Atualize `app/models`.
+  2. Gere migration: `alembic revision --autogenerate`.
+  3. Revise e commite a migration em `alembic/versions/`.
+  4. Aplique em CI/ambiente local e rode testes.
+
+- Recomendo adicionar `CONTRIBUTING.md` e `pre-commit` (black/ruff) — posso criar isso se desejar.
+
+## CI e publicação (nota)
+- Existe um workflow de CI em `.github/workflows/ci.yml` que roda `pytest` e builda a imagem.
+- Para publicar a imagem no GHCR/Docker Hub é necessário configurar secrets no repositório; eu posso adaptar o workflow para `build-and-push` quando você confirmar o registry e fornecer os secrets.
+
+---
+
+Se quiser que eu faça agora alguma ação (ex.: criar `CONTRIBUTING.md`, adicionar `pre-commit` ou configurar publicação no GHCR), diga qual e eu executo.
+
 

@@ -49,4 +49,3 @@ Issue: #12
 - Revise migrations geradas automaticamente.
 - Não aplique migrations sem revisão.
 
-Se precisar, posso ajudar a configurar a action de CI para aplicar migrations em ambientes de staging ou gerar um checklist automático.
