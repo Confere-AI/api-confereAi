@@ -29,7 +29,6 @@ build/
 
 # Docker
 docker-compose.override.yml
-docker-compose.*.yml
 **/db-data
 
 # IDEs and editors
@@ -47,3 +46,14 @@ Thumbs.db
 
 # Python byte-compiled
 *.pyc
+
+# Local & tool caches
+.python-version
+.mypy_cache/
+.cache/
+.coverage
+*.sqlite3
+.ropeproject/
+
+# Temporary debug files
+debug_*.py
