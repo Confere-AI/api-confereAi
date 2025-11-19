@@ -11,6 +11,8 @@ class EngajamentoDocumento(Base):
     campos numéricos conforme seu schema (Float vs Integer vs Numeric).
     """
 
+    __tablename__ = "engajamento_documento"
+
     id_engajamento: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     # Exemplo de campos: atualize conforme o schema que você enviar
     documento_id: Mapped[int] = mapped_column(Integer, nullable=True)  # FK sugerida para `documentos.id`

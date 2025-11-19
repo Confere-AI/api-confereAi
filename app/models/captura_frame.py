@@ -12,6 +12,8 @@ class CapturaFrame(Base):
     Use `Float` para valores contínuos (ex.: métricas de confiança).
     """
 
+    __tablename__ = "captura_frame"
+
     id_frame: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     documento_id: Mapped[int] = mapped_column(Integer, nullable=True)  # possível FK para documentos.id
     frame_index: Mapped[int] = mapped_column(Integer, nullable=False)

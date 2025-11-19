@@ -1,12 +1,23 @@
-import asyncio
 import os
+import sys
 from logging.config import fileConfig
+import asyncio
+from dotenv import load_dotenv
+
+# adiciona a raiz do projeto ao PYTHONPATH para o Alembic rodando dentro do container
+proj_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if proj_root not in sys.path:
+    sys.path.insert(0, proj_root)
 
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
-
 from alembic import context
+from app.models.base import Base
+import app.models 
+
+load_dotenv()
+
 
 config = context.config
 
@@ -16,12 +27,8 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here for 'autogenerate' support
 # from myapp import mymodel
-from app.models.base import Base
-# import all models so `target_metadata` contains definitions for autogenerate
-import app.models  # noqa: F401
 
 target_metadata = Base.metadata
-
 
 def run_migrations_offline() -> None:
     url = os.environ.get("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
