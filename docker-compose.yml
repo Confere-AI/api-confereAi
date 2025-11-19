@@ -1,12 +1,8 @@
-version: '3.8'
 services:
   db:
     image: postgres:15
     restart: always
-    environment:
-      POSTGRES_DB: confere
-      POSTGRES_USER: confere
-      POSTGRES_PASSWORD: confere
+    env_file: .env
     ports:
       - "5432:5432"
     volumes:
@@ -16,18 +12,28 @@ services:
     build: .
     depends_on:
       - db
+    env_file: .env
     environment:
-      # Use the asyncpg dialect with SQLAlchemy
+      # Fallback DATABASE_URL in case .env is not provided
       DATABASE_URL: postgresql+asyncpg://confere:confere@db:5432/confere
+      PYTHONPATH: /app
     ports:
       - "8000:80"
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
   migrate:
     build: .
     depends_on:
       - db
     environment:
       DATABASE_URL: postgresql+asyncpg://confere:confere@db:5432/confere
-    command: ["alembic", "upgrade", "head"]
+      PYTHONPATH: /app
+    working_dir: /app
+    command: ["sh", "-c", "python scripts/wait_for_db.py && alembic upgrade head"]
 
 volumes:
   db-data:

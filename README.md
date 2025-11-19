@@ -1,58 +1,179 @@
 # confereAi API
 
-Este repositÃ³rio contÃ©m uma API em FastAPI. Para desenvolvimento local com um banco PostgreSQL em container, usamos `docker-compose`.
+Este repositório contém a API do Confere-AI (desenvolvida com FastAPI) e os arquivos necessários para executar o sistema em containers Docker.
 
-## Requisitos
-- Docker e Docker Compose
-- Python 3.11 (para desenvolver localmente)
+Visão geral
+- Backend: pasta `app/` (FastAPI)
+- Banco de dados: PostgreSQL (container)
+- Migrações: Alembic
 
-## Como rodar com Docker Compose
-1. Copie o `.env.example` para `.env` e ajuste se necessÃ¡rio:
-	```powershell
-	cp .env.example .env
-	```
-2. Inicie os serviÃ§os (API + Postgres):
-	```powershell
-	docker compose up -d --build
-	```
-3. A API ficarÃ¡ disponÃ­vel em `http://localhost:8000`.
+----
 
-### VariÃ¡veis de ambiente importantes
-- `DATABASE_URL` â€” string de conexÃ£o SQLAlchemy, por exemplo: `postgresql+asyncpg://confere:confere@db:5432/confere`
+Requisitos
+- Docker Desktop (Windows) com Compose habilitado
+- PowerShell (no Windows) ou outro terminal
+- (Opcional) Python 3.11+ para rodar localmente sem Docker
 
-## MigraÃ§Ãµes (Alembic)
-As dependÃªncias incluem `alembic`. Para inicializar e executar migraÃ§Ãµes:
+----
 
-1. Crie a pasta de migraÃ§Ãµes (se ainda nÃ£o existir):
-	```powershell
-	alembic init alembic
-	```
-2. Configure `alembic.ini` e `alembic/env.py` para usar `DATABASE_URL` e o `Base` do `app.models.base`.
-	> ObservaÃ§Ã£o: o `alembic/env.py` jÃ¡ importa `app.models` para que o `metadata` dos models seja visÃ­vel durante o autogerate.
-3. Para criar uma migraÃ§Ã£o automÃ¡tica a partir dos models:
-	```powershell
-	alembic revision --autogenerate -m "create initial tables"
-	```
-4. Para aplicar migraÃ§Ãµes:
-	 - Local (se `DATABASE_URL` estiver configurado no host):
-		 ```powershell
-		 alembic upgrade head
-		 ```
-	 - Em Docker Compose (recomendado):
-		 ```powershell
-		 # Roda as migrations dentro do container `migrate` e encerra
-		 docker compose run --rm migrate
-		 # ou (se preferir executar a partir da imagem web):
-		 docker compose run --rm web alembic upgrade head
-		 ```
-
-Se quiser, eu posso gerar os arquivos iniciais do Alembic jÃ¡ configurados.
-
-## Criar tabelas sem Alembic (dev)
-Se vocÃª prefere criar tabelas rapidamente sem usar Alembic, hÃ¡ um helper assÃ­ncrono:
+Preparar o ambiente
+1. Copie o arquivo de exemplo de variáveis de ambiente para `.env` e ajuste conforme necessário:
 
 ```powershell
-docker compose exec web python -c "import asyncio; from app.db.init_db import init_db; asyncio.run(init_db())"
+Copy-Item .\.env.example .\.env
+notepad .\.env # ajuste valores se necessário
 ```
 
-Isso executa `Base.metadata.create_all()` usando o engine assÃ­ncrono â€” Ãºtil para desenvolvimento rÃ¡pido.
+2. Verifique que o arquivo `.env` não foi adicionado ao repositório (ele já consta em `.gitignore`):
+
+```powershell
+git status --porcelain
+```
+
+3. Confirme o valor de `DATABASE_URL` em `.env` (exemplo: `postgresql+asyncpg://confere:confere@db:5432/confere`).
+
+----
+
+Executando com Docker Compose (recomendado)
+1. Levante todos os serviços (Postgres, backend e serviço de migração):
+
+```powershell
+docker compose up --build -d
+```
+
+2. Verifique o status dos containers:
+
+```powershell
+docker compose ps
+```
+
+3. Acompanhe os logs do backend:
+
+```powershell
+docker compose logs -f web
+```
+
+4. Acesse a API:
+- URL base: `http://localhost:8000`
+- Documentação (Swagger): `http://localhost:8000/docs`
+- Endpoint de saúde: `http://localhost:8000/health`
+
+5. Caso seja necessário aplicar migrações manualmente (o serviço `migrate` tenta aplicar automaticamente no startup):
+
+```powershell
+docker compose run --rm migrate
+```
+
+6. Parar os serviços (mantendo os dados do banco):
+
+```powershell
+docker compose down
+```
+
+7. Parar e remover volumes (apagar dados do banco):
+
+```powershell
+docker compose down -v
+```
+
+----
+
+Executando localmente sem Docker (desenvolvimento)
+1. Crie e ative um ambiente virtual (PowerShell):
+
+```powershell
+python -m venv .venv
+.\\.venv\\Scripts\\Activate.ps1
+```
+
+2. Instale as dependências:
+
+```powershell
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+3. Inicie o servidor em modo de desenvolvimento:
+
+```powershell
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+4. Acesse `http://localhost:8000/docs` para testar os endpoints.
+
+----
+
+Testes
+1. Instale as dependências (se não estiver usando Docker):
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
+2. Execute os testes com `pytest`:
+
+Local:
+```powershell
+pytest -q
+```
+
+Dentro do container web:
+```powershell
+docker compose exec web pytest -q
+```
+
+----
+
+Migrações (Alembic)
+O projeto já possui `alembic` configurado. Para criar e aplicar migrações:
+
+- Criar uma revisão automática a partir dos modelos:
+
+```powershell
+alembic revision --autogenerate -m "descrição"
+```
+
+- Aplicar migrações localmente:
+
+```powershell
+alembic upgrade head
+```
+
+- Aplicar migrações no Docker:
+
+```powershell
+docker compose run --rm migrate
+```
+
+Observação: o serviço `migrate` utiliza o script `scripts/wait_for_db.py` para aguardar o banco antes de executar as migrations.
+
+----
+
+Verificação de saúde (healthcheck)
+- A aplicação expõe `GET /health` retornando `{ "status": "ok" }`. Esse endpoint é utilizado pelo `docker-compose` para verificar a saúde do serviço.
+
+----
+
+Segurança e boas práticas
+- Não comite arquivos com credenciais (o `.env` está listado em `.gitignore`). Para produção, use secrets (Docker secrets, Vault, etc.).
+- Em produção, restrinja CORS (atualmente está `allow_origins=["*"]` para desenvolvimento).
+- Use logging estruturado em vez de `print()` para mensagens de runtime (substituições já aplicadas em alguns scripts).
+
+----
+
+Resolução de problemas (rápido)
+- Se o `docker compose up` falhar no build por dependências nativas (por exemplo `asyncpg`), tente rebuild sem cache:
+
+```powershell
+docker compose build --no-cache web
+```
+
+- Se as migrations falharem por timeout de conexão, aumente `WAIT_TIMEOUT` ou execute:
+
+```powershell
+docker compose run --rm migrate
+```
+
+----
+
+Se desejar, posso adaptar estas instruções para seu CI/CD (GitHub Actions, GitLab CI etc.).
