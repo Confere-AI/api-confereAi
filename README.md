@@ -1,11 +1,11 @@
 # confereAi API
 
-Este repositório contém a API do Confere-AI (desenvolvida com FastAPI) e os arquivos necessários para executar o sistema em containers Docker.
+Este repositï¿½rio contï¿½m a API do Confere-AI (desenvolvida com FastAPI) e os arquivos necessï¿½rios para executar o sistema em containers Docker.
 
-Visão geral
+Visï¿½o geral
 - Backend: pasta `app/` (FastAPI)
 - Banco de dados: PostgreSQL (container)
-- Migrações: Alembic
+- Migraï¿½ï¿½es: Alembic
 
 ----
 
@@ -17,14 +17,14 @@ Requisitos
 ----
 
 Preparar o ambiente
-1. Copie o arquivo de exemplo de variáveis de ambiente para `.env` e ajuste conforme necessário:
+1. Copie o arquivo de exemplo de variï¿½veis de ambiente para `.env` e ajuste conforme necessï¿½rio:
 
 ```powershell
 Copy-Item .\.env.example .\.env
-notepad .\.env # ajuste valores se necessário
+notepad .\.env # ajuste valores se necessï¿½rio
 ```
 
-2. Verifique que o arquivo `.env` não foi adicionado ao repositório (ele já consta em `.gitignore`):
+2. Verifique que o arquivo `.env` nï¿½o foi adicionado ao repositï¿½rio (ele jï¿½ consta em `.gitignore`):
 
 ```powershell
 git status --porcelain
@@ -35,7 +35,7 @@ git status --porcelain
 ----
 
 Executando com Docker Compose (recomendado)
-1. Levante todos os serviços (Postgres, backend e serviço de migração):
+1. Levante todos os serviï¿½os (Postgres, backend e serviï¿½o de migraï¿½ï¿½o):
 
 ```powershell
 docker compose up --build -d
@@ -55,16 +55,16 @@ docker compose logs -f web
 
 4. Acesse a API:
 - URL base: `http://localhost:8000`
-- Documentação (Swagger): `http://localhost:8000/docs`
-- Endpoint de saúde: `http://localhost:8000/health`
+- Documentaï¿½ï¿½o (Swagger): `http://localhost:8000/docs`
+- Endpoint de saï¿½de: `http://localhost:8000/health`
 
-5. Caso seja necessário aplicar migrações manualmente (o serviço `migrate` tenta aplicar automaticamente no startup):
+5. Caso seja necessï¿½rio aplicar migraï¿½ï¿½es manualmente (o serviï¿½o `migrate` tenta aplicar automaticamente no startup):
 
 ```powershell
 docker compose run --rm migrate
 ```
 
-6. Parar os serviços (mantendo os dados do banco):
+6. Parar os serviï¿½os (mantendo os dados do banco):
 
 ```powershell
 docker compose down
@@ -86,7 +86,7 @@ python -m venv .venv
 .\\.venv\\Scripts\\Activate.ps1
 ```
 
-2. Instale as dependências:
+2. Instale as dependï¿½ncias:
 
 ```powershell
 python -m pip install --upgrade pip
@@ -104,7 +104,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ----
 
 Testes
-1. Instale as dependências (se não estiver usando Docker):
+1. Instale as dependï¿½ncias (se nï¿½o estiver usando Docker):
 
 ```powershell
 python -m pip install -r requirements.txt
@@ -124,56 +124,54 @@ docker compose exec web pytest -q
 
 ----
 
-Migrações (Alembic)
-O projeto já possui `alembic` configurado. Para criar e aplicar migrações:
+Migraï¿½ï¿½es (Alembic)
+O projeto jï¿½ possui `alembic` configurado. Para criar e aplicar migraï¿½ï¿½es:
 
-- Criar uma revisão automática a partir dos modelos:
+- Criar uma revisï¿½o automï¿½tica a partir dos modelos:
 
 ```powershell
-alembic revision --autogenerate -m "descrição"
+alembic revision --autogenerate -m "descriï¿½ï¿½o"
 ```
 
-- Aplicar migrações localmente:
+- Aplicar migraï¿½ï¿½es localmente:
 
 ```powershell
 alembic upgrade head
 ```
 
-- Aplicar migrações no Docker:
+- Aplicar migraï¿½ï¿½es no Docker:
 
 ```powershell
 docker compose run --rm migrate
 ```
 
-Observação: o serviço `migrate` utiliza o script `scripts/wait_for_db.py` para aguardar o banco antes de executar as migrations.
+Observaï¿½ï¿½o: o serviï¿½o `migrate` utiliza o script `scripts/wait_for_db.py` para aguardar o banco antes de executar as migrations.
 
 ----
 
-Verificação de saúde (healthcheck)
-- A aplicação expõe `GET /health` retornando `{ "status": "ok" }`. Esse endpoint é utilizado pelo `docker-compose` para verificar a saúde do serviço.
+Verificaï¿½ï¿½o de saï¿½de (healthcheck)
+- A aplicaï¿½ï¿½o expï¿½e `GET /health` retornando `{ "status": "ok" }`. Esse endpoint ï¿½ utilizado pelo `docker-compose` para verificar a saï¿½de do serviï¿½o.
 
 ----
 
-Segurança e boas práticas
-- Não comite arquivos com credenciais (o `.env` está listado em `.gitignore`). Para produção, use secrets (Docker secrets, Vault, etc.).
-- Em produção, restrinja CORS (atualmente está `allow_origins=["*"]` para desenvolvimento).
-- Use logging estruturado em vez de `print()` para mensagens de runtime (substituições já aplicadas em alguns scripts).
+Seguranï¿½a e boas prï¿½ticas
+- Nï¿½o comite arquivos com credenciais (o `.env` estï¿½ listado em `.gitignore`). Para produï¿½ï¿½o, use secrets (Docker secrets, Vault, etc.).
+- Em produï¿½ï¿½o, restrinja CORS (atualmente estï¿½ `allow_origins=["*"]` para desenvolvimento).
+- Use logging estruturado em vez de `print()` para mensagens de runtime (substituiï¿½ï¿½es jï¿½ aplicadas em alguns scripts).
 
 ----
 
-Resolução de problemas (rápido)
-- Se o `docker compose up` falhar no build por dependências nativas (por exemplo `asyncpg`), tente rebuild sem cache:
+Resoluï¿½ï¿½o de problemas (rï¿½pido)
+- Se o `docker compose up` falhar no build por dependï¿½ncias nativas (por exemplo `asyncpg`), tente rebuild sem cache:
 
 ```powershell
 docker compose build --no-cache web
 ```
 
-- Se as migrations falharem por timeout de conexão, aumente `WAIT_TIMEOUT` ou execute:
+- Se as migrations falharem por timeout de conexï¿½o, aumente `WAIT_TIMEOUT` ou execute:
 
 ```powershell
 docker compose run --rm migrate
 ```
 
 ----
-
-Se desejar, posso adaptar estas instruções para seu CI/CD (GitHub Actions, GitLab CI etc.).
